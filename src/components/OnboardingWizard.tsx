@@ -156,6 +156,10 @@ export function OnboardingWizard() {
     useState(false);
   const [unsetAnthropicLoading, setUnsetAnthropicLoading] = useState(false);
   const [showMoreAdapters, setShowMoreAdapters] = useState(false);
+  const [claudeAuthMode, setClaudeAuthMode] = useState<
+    "claude_login" | "api_key"
+  >("claude_login");
+  const [anthropicApiKey, setAnthropicApiKey] = useState("");
 
   // Step 3
   const [taskTitle, setTaskTitle] = useState(
@@ -328,7 +332,9 @@ export function OnboardingWizard() {
     setAdapterEnvLoading(false);
     setForceUnsetAnthropicApiKey(false);
     setUnsetAnthropicLoading(false);
-    setTaskTitle("Hire your first engineer and create a hiring plan");
+    setClaudeAuthMode("claude_login");
+    setAnthropicApiKey("");
+    setTaskTitle("Assess the business, hire specialists from the catalog, and start delegating");
     setTaskDescription(DEFAULT_TASK_DESCRIPTION);
     setCreatedCompanyId(null);
     setCreatedCompanyPrefix(null);
@@ -366,14 +372,19 @@ export function OnboardingWizard() {
           ? DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX
           : defaultCreateValues.dangerouslyBypassSandbox
     });
-    if (adapterType === "claude_local" && forceUnsetAnthropicApiKey) {
+    if (adapterType === "claude_local") {
       const env =
         typeof config.env === "object" &&
         config.env !== null &&
         !Array.isArray(config.env)
           ? { ...(config.env as Record<string, unknown>) }
           : {};
-      env.ANTHROPIC_API_KEY = { type: "plain", value: "" };
+      if (claudeAuthMode === "claude_login" || forceUnsetAnthropicApiKey) {
+        // Subscription mode: clear any API key so Claude uses local login
+        env.ANTHROPIC_API_KEY = { type: "plain", value: "" };
+      } else if (claudeAuthMode === "api_key" && anthropicApiKey.trim()) {
+        env.ANTHROPIC_API_KEY = { type: "plain", value: anthropicApiKey.trim() };
+      }
       config.env = env;
     }
     return config;
@@ -932,6 +943,73 @@ export function OnboardingWizard() {
                       </div>
                     )}
                   </div>
+
+                  {/* Auth mode selector for Claude Code */}
+                  {adapterType === "claude_local" && (
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">
+                        Authentication
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          className={cn(
+                            "flex flex-col items-center gap-1 rounded-md border p-3 text-xs transition-colors relative",
+                            claudeAuthMode === "claude_login"
+                              ? "border-foreground bg-accent"
+                              : "border-border hover:bg-accent/50"
+                          )}
+                          onClick={() => {
+                            setClaudeAuthMode("claude_login");
+                            setForceUnsetAnthropicApiKey(true);
+                          }}
+                        >
+                          <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
+                            Recommended
+                          </span>
+                          <Terminal className="h-4 w-4" />
+                          <span className="font-medium">Claude Code Login</span>
+                          <span className="text-muted-foreground text-[10px]">
+                            Uses your existing CLI login
+                          </span>
+                        </button>
+                        <button
+                          className={cn(
+                            "flex flex-col items-center gap-1 rounded-md border p-3 text-xs transition-colors",
+                            claudeAuthMode === "api_key"
+                              ? "border-foreground bg-accent"
+                              : "border-border hover:bg-accent/50"
+                          )}
+                          onClick={() => {
+                            setClaudeAuthMode("api_key");
+                            setForceUnsetAnthropicApiKey(false);
+                          }}
+                        >
+                          <Code className="h-4 w-4" />
+                          <span className="font-medium">API Key</span>
+                          <span className="text-muted-foreground text-[10px]">
+                            Provide ANTHROPIC_API_KEY
+                          </span>
+                        </button>
+                      </div>
+                      {claudeAuthMode === "claude_login" && (
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          No API key needed. Agents use your Claude Code subscription credentials.
+                          Run <span className="font-mono">claude login</span> if not logged in.
+                        </p>
+                      )}
+                      {claudeAuthMode === "api_key" && (
+                        <div className="mt-2">
+                          <input
+                            type="password"
+                            className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 font-mono"
+                            placeholder="sk-ant-..."
+                            value={anthropicApiKey}
+                            onChange={(e) => setAnthropicApiKey(e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Conditional adapter fields */}
                   {(adapterType === "claude_local" ||
