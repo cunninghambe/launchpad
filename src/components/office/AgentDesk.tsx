@@ -9,9 +9,10 @@ interface AgentDeskProps {
   position: [number, number, number];
   floorBounds: { width: number; depth: number };
   onSelect?: (agent: OfficeAgent) => void;
+  hasActiveWorkspace?: boolean;
 }
 
-export function AgentDesk({ agent, position, floorBounds, onSelect }: AgentDeskProps) {
+export function AgentDesk({ agent, position, floorBounds, onSelect, hasActiveWorkspace }: AgentDeskProps) {
   const [hovered, setHovered] = useState(false);
 
   function handleClick(event: ThreeEvent<MouseEvent>) {
@@ -52,7 +53,7 @@ export function AgentDesk({ agent, position, floorBounds, onSelect }: AgentDeskP
       {/* Monitor screen */}
       <mesh position={[0, 0.75, -0.3]} castShadow>
         <boxGeometry args={[0.9, 0.55, 0.04]} />
-        <meshStandardMaterial color="#1a1a2e" />
+        <meshStandardMaterial color={hasActiveWorkspace ? "#1a3a4e" : "#1a1a2e"} />
       </mesh>
 
       {/* Monitor stand */}
