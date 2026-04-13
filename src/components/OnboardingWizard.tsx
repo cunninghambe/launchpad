@@ -71,11 +71,39 @@ type AdapterType =
   | "http"
   | "openclaw_gateway";
 
-const DEFAULT_TASK_DESCRIPTION = `You are the CEO. You set the direction for the company.
+const DEFAULT_TASK_DESCRIPTION = `You are the CEO. You set the direction for the company. You NEVER do implementation work yourself — you delegate, hire, and review.
 
-- hire a founding engineer
-- write a hiring plan
-- break the roadmap into concrete tasks and start delegating work`;
+## Step 1: Assess the business and build your team
+
+Before writing any plan, read \`archetypes/catalog.json\` in this project. It contains 185 specialist archetypes organized by division. Pick the right specialists for THIS company's business type.
+
+Available divisions (archetype count):
+  engineering (29) | marketing (30) | design (8) | sales (8) | product (5)
+  finance (5) | testing (8) | support (6) | project-management (6)
+  paid-media (7) | specialized (41) | game-development (20)
+  spatial-computing (6) | academic (5) | integrations (1)
+
+To browse, read the catalog:
+  cat archetypes/catalog.json | jq '[.[] | select(.division=="engineering")] | .[].slug'
+
+Each entry has: slug, division, title, description, responsibilities.
+Full persona files are at: archetypes/{division}/{slug}.md
+
+## Step 2: Hire your team
+
+For each role the company needs, create an agent using the matching archetype slug as the role identifier. Start lean — 3 to 5 hires max for the first sprint. You can always hire more later.
+
+Hiring guidelines:
+- Match the archetype to the actual work needed, not the closest generic title
+- Use haiku-tier models for execution agents, sonnet for leads/reviewers
+- Every hire must have a clear first task waiting — don't hire speculatively
+- Log each hire decision with a one-line rationale
+
+## Step 3: Plan and delegate
+
+- Break the roadmap into concrete tasks with clear acceptance criteria
+- Assign each task to the specialist best suited for it
+- Review completed work before marking done — never rubber-stamp`;
 
 export function OnboardingWizard() {
   const { onboardingOpen, onboardingOptions, closeOnboarding } = useDialog();
@@ -131,7 +159,7 @@ export function OnboardingWizard() {
 
   // Step 3
   const [taskTitle, setTaskTitle] = useState(
-    "Hire your first engineer and create a hiring plan"
+    "Assess the business, hire specialists from the catalog, and start delegating"
   );
   const [taskDescription, setTaskDescription] = useState(
     DEFAULT_TASK_DESCRIPTION
